@@ -1,0 +1,13 @@
+#if (${PACKAGE_NAME} && ${PACKAGE_NAME} != "")package ${PACKAGE_NAME};#end
+
+import de.robv.android.xposed.IXposedHookInitPackageResources;
+import de.robv.android.xposed.callbacks.XC_InitPackageResources;
+
+public class ${NAME} implements IXposedHookInitPackageResources {
+    private static final String TAG = ${NAME}.class.getSimpleName();
+
+    @Override
+    public void handleInitPackageResources(XC_InitPackageResources.InitPackageResourcesParam initPackageResourcesParam) throws Throwable {
+
+    }
+}

@@ -1,0 +1,13 @@
+#if (${PACKAGE_NAME} && ${PACKAGE_NAME} != "")package ${PACKAGE_NAME};#end
+
+import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.callbacks.XC_LoadPackage;
+
+public class ${NAME} implements IXposedHookLoadPackage {
+    private static final String TAG = ${NAME}.class.getSimpleName();
+
+    @Override
+    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+
+    }
+}

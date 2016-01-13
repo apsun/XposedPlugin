@@ -1,0 +1,45 @@
+<idea-plugin version="2">
+    <id>com.crossbowffs.intellij.xposed</id>
+    <name>Xposed Support</name>
+    <version>1.0</version>
+    <vendor email="me@apsun.xyz" url="http://apsun.xyz/">CrossbowFFS</vendor>
+
+    <description><![CDATA[
+        Adds support for Xposed module development to IntelliJ IDEA/Android Studio.
+    ]]></description>
+
+    <change-notes><![CDATA[
+
+    ]]></change-notes>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+    <idea-version since-build="141.0"/>
+
+    <depends>com.intellij.modules.lang</depends>
+    <depends>org.jetbrains.android</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <facetType implementation="com.crossbowffs.xposedplugin.facet.XposedFacetType"/>
+        <fileTemplateGroup implementation="com.crossbowffs.xposedplugin.templates.XposedHookTemplateFactory"/>
+        <localInspection
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.crossbowffs.xposedplugin.inspections.XposedInitInspectionTool"
+            displayName="xposed_init checker"
+            groupName="Xposed"/>
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+        <action id="Xposed.NewXposedHook"
+                class="com.crossbowffs.xposedplugin.actions.NewXposedHookAction"
+                text="Xposed Hook"
+                description="Create a new Xposed hook">
+            <add-to-group group-id="NewGroup" anchor="first"/>
+        </action>
+    </actions>
+
+    <application-components>
+        <!-- Add your application components here -->
+    </application-components>
+</idea-plugin>
