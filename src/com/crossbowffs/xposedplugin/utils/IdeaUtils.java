@@ -1,5 +1,8 @@
 package com.crossbowffs.xposedplugin.utils;
 
+import com.android.tools.idea.gradle.GradleSyncState;
+import com.android.tools.idea.gradle.project.GradleProjectImporter;
+import com.android.tools.idea.gradle.project.GradleSyncListener;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
@@ -10,6 +13,8 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiFileSystemItem;
+import com.intellij.util.Consumer;
+import com.intellij.util.ThreeState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,5 +51,29 @@ public class IdeaUtils {
         }
         moduleDirPath = FileUtil.toSystemIndependentName(moduleDirPath);
         return LocalFileSystem.getInstance().findFileByPath(moduleDirPath);
+    }
+
+    public static void syncGradleIfRequired(@NotNull Module module, @NotNull final Consumer<Boolean> callback) {
+        Project project = module.getProject();
+        if (GradleSyncState.getInstance(project).isSyncNeeded() == ThreeState.NO) {
+            callback.consume(true);
+        }
+
+        GradleProjectImporter.getInstance().requestProjectSync(project, true, true, new GradleSyncListener.Adapter() {
+            @Override
+            public void syncSucceeded(@NotNull Project project) {
+                callback.consume(true);
+            }
+
+            @Override
+            public void syncFailed(@NotNull Project project, @NotNull String s) {
+                callback.consume(false);
+            }
+
+            @Override
+            public void syncSkipped(@NotNull Project project) {
+                callback.consume(false);
+            }
+        });
     }
 }

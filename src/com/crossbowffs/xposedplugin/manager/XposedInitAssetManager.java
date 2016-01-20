@@ -5,8 +5,15 @@ import com.crossbowffs.xposedplugin.utils.IdeaUtils;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.JavaPsiFacade;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.util.LineSeparator;
+import com.intellij.util.Processor;
+import com.intellij.util.Query;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,28 +32,51 @@ public class XposedInitAssetManager {
     private List<String> mDeclaredXposedHooks = new ArrayList<String>(1);
     private VirtualFile mXposedInitFile;
     private long mLastModificationTime = -1;
+    private PsiClass mXposedModCls;
 
     private XposedInitAssetManager(@NotNull Module module) {
         mModule = module;
     }
 
     public boolean isXposedHookDeclared(@NotNull String className) {
-        ApplicationManager.getApplication().runReadAction(new Runnable() {
-            @Override
-            public void run() {
-                readXposedInitFile();
-            }
-        });
+        readXposedInitFile();
         return mDeclaredXposedHooks.contains(className);
     }
 
     public void declareXposedHook(@NotNull final String className) {
-        ApplicationManager.getApplication().runWriteAction(new Runnable() {
+        if (isXposedHookDeclared(className)) {
+            return;
+        }
+        mDeclaredXposedHooks.add(className.trim());
+        writeXposedInitFile();
+    }
+
+    public void syncDeclaredXposedHooks() {
+        if (mXposedModCls == null) {
+            mXposedModCls = findXposedModCls();
+        }
+        GlobalSearchScope moduleScope = GlobalSearchScope.moduleScope(mModule);
+        Query<PsiClass> query = ClassInheritorsSearch.search(mXposedModCls, moduleScope, true);
+        mDeclaredXposedHooks.clear();
+        query.forEach(new Processor<PsiClass>() {
             @Override
-            public void run() {
-                writeXposedInitFile(className);
+            public boolean process(PsiClass psiClass) {
+                mDeclaredXposedHooks.add(psiClass.getQualifiedName());
+                return true;
             }
         });
+        writeXposedInitFile();
+    }
+
+    @NotNull
+    private PsiClass findXposedModCls() {
+        Project project = mModule.getProject();
+        GlobalSearchScope scope = GlobalSearchScope.moduleWithLibrariesScope(mModule);
+        PsiClass cls = JavaPsiFacade.getInstance(project).findClass("de.robv.android.xposed.IXposedMod", scope);
+        if (cls == null) {
+            throw new XposedPluginException("Could not find IXposedMod class, did you delete the XposedBridge dependency?");
+        }
+        return cls;
     }
 
     @NotNull
@@ -121,6 +151,15 @@ public class XposedInitAssetManager {
     }
 
     private void readXposedInitFile() {
+        ApplicationManager.getApplication().runReadAction(new Runnable() {
+            @Override
+            public void run() {
+                readXposedInitFileInternal();
+            }
+        });
+    }
+
+    private void readXposedInitFileInternal() {
         if (mXposedInitFile == null || !mXposedInitFile.exists()) {
             mXposedInitFile = findXposedInitFile();
             if (mXposedInitFile == null) {
@@ -139,13 +178,16 @@ public class XposedInitAssetManager {
         mLastModificationTime = mXposedInitFile.getTimeStamp();
     }
 
-    private void writeXposedInitFile(@NotNull String newClassName) {
-        if (isXposedHookDeclared(newClassName)) {
-            return;
-        }
+    private void writeXposedInitFile() {
+        ApplicationManager.getApplication().runWriteAction(new Runnable() {
+            @Override
+            public void run() {
+                writeXposedInitFileInternal();
+            }
+        });
+    }
 
-        mDeclaredXposedHooks.add(newClassName.trim());
-
+    private void writeXposedInitFileInternal() {
         if (mXposedInitFile == null || !mXposedInitFile.exists()) {
             mXposedInitFile = createXposedInitFile();
         }

@@ -1,8 +1,5 @@
 package com.crossbowffs.xposedplugin.actions;
 
-import com.crossbowffs.xposedplugin.manager.AndroidManifestManager;
-import com.crossbowffs.xposedplugin.manager.XposedBridgeDependencyManager;
-import com.crossbowffs.xposedplugin.manager.XposedBridgeJarManager;
 import com.crossbowffs.xposedplugin.manager.XposedInitAssetManager;
 import com.crossbowffs.xposedplugin.templates.XposedHookTemplates;
 import com.crossbowffs.xposedplugin.utils.IdeaUtils;
@@ -45,9 +42,6 @@ public class NewXposedHookAction extends JavaCreateTemplateInPackageAction<PsiCl
     @Override
     protected void postProcess(PsiClass createdElement, String templateName, Map<String, String> customProperties) {
         Module module = IdeaUtils.getModule(createdElement);
-        XposedBridgeJarManager.copyXposedBridgeJarToModule(module);
-        XposedBridgeDependencyManager.ensureXposedBridgeDependency(module);
-        AndroidManifestManager.ensureManifestInfo(module);
         XposedInitAssetManager.getInstance(module).declareXposedHook(createdElement.getQualifiedName());
         moveCaretToMethodBody(createdElement.getAllMethods()[0]);
     }
